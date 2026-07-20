@@ -10,24 +10,24 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Mi Semestre">
-<meta name="theme-color" content="#6C5CE7">
+<meta name="theme-color" content="#f783a8">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg: #F7F8FB;
+    --bg: #F7F7F7;
     --paper: #FFFFFF;
-    --ink: #1E1B2E;
+    --ink: #111111;
     --ink-soft: #6B6780;
     --line: #E4E2ED;
-    --accent: #6C5CE7;
-    --accent-soft: #EFEBFF;
+    --accent: #f783a8;
+    --accent-soft: #FDE7EF;
 
-    --c-entrenamiento: #22A669;
-    --c-partido: #3A86FF;
-    --c-estudio-default: #F4A100;
-    --c-evaluacion-default: #E8515A;
+    --c-entrenamiento: #9bc46c;
+    --c-partido: #87ad5c;
+    --c-estudio-default: #876449;
+    --c-evaluacion-default: #ab4164;
   }
 
   *{box-sizing:border-box; margin:0; padding:0;}
@@ -180,10 +180,10 @@
   .event-block .t{ font-weight:700; display:block; }
   .event-block .h{ opacity:.8; font-size: 10px; }
   .now-line{
-    position:absolute; left:0; right:0; height:2px; background:#E8515A; z-index:5; pointer-events:none;
+    position:absolute; left:0; right:0; height:2px; background:#f783a8; z-index:5; pointer-events:none;
   }
   .now-line::before{
-    content:''; position:absolute; left:-4px; top:-3px; width:8px; height:8px; border-radius:50%; background:#E8515A;
+    content:''; position:absolute; left:-4px; top:-3px; width:8px; height:8px; border-radius:50%; background:#f783a8;
   }
 
   /* Modal */
@@ -387,8 +387,8 @@ const eventsCol = collection(db, "events");
 const ramosCol = collection(db, "ramos");
 
 const TYPE_LABEL = { evaluacion: "Evaluación", entrenamiento: "Entrenamiento", partido: "Partido", estudio: "Estudio" };
-const FIXED_COLOR = { entrenamiento: "#22A669", partido: "#3A86FF" };
-const RAMO_PRESET_COLORS = ["#E8515A","#3A86FF","#22A669","#F4A100","#9B5DE5","#00B4D8","#F15BB5","#4361EE","#FB8500","#118AB2"];
+const FIXED_COLOR = { entrenamiento: "#9bc46c", partido: "#87ad5c" };
+const RAMO_PRESET_COLORS = ["#ffabc7","#fac0dc","#f593c2","#d97798","#e85f8d","#ab4164","#f5538e"];
 
 let allEvents = [];
 let ramos = [];
@@ -435,7 +435,7 @@ function colorFor(ev){
     if(r) return r.color;
   }
   if(FIXED_COLOR[ev.type]) return FIXED_COLOR[ev.type];
-  return ev.type === 'estudio' ? '#F4A100' : '#E8515A';
+  return ev.type === 'estudio' ? '#876449' : '#ab4164';
 }
 function styleChip(el, color){
   el.style.background = color + '20';
@@ -456,7 +456,7 @@ function renderLegend(){
     it.innerHTML = `<span class="dot" style="background:${r.color}"></span>${escapeHtml(r.name)}`;
     legend.appendChild(it);
   });
-  const fixed = [['Entrenamiento', FIXED_COLOR.entrenamiento], ['Partido', FIXED_COLOR.partido], ['Estudio (sin ramo)', '#F4A100']];
+  const fixed = [['Entrenamiento', FIXED_COLOR.entrenamiento], ['Partido', FIXED_COLOR.partido], ['Sesión de Estudio', '#876449']];
   fixed.forEach(([label,color])=>{
     const it = document.createElement('div');
     it.className = 'legend-item';
