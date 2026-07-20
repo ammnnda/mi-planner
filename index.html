@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Mi Semestre — Planner</title>
+
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Mi Semestre">
+<meta name="theme-color" content="#6C5CE7">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #F7F8FB;
+    --paper: #FFFFFF;
+    --ink: #1E1B2E;
+    --ink-soft: #6B6780;
+    --line: #E4E2ED;
+    --accent: #6C5CE7;
+    --accent-soft: #EFEBFF;
+
+    --c-entrenamiento: #22A669;
+    --c-partido: #3A86FF;
+    --c-estudio-default: #F4A100;
+    --c-evaluacion-default: #E8515A;
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+
+  body{
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 24px 20px 80px;
+  }
+
+  h1,h2,h3, .brand, .day-num, .modal h2{
+    font-family: 'Space Grotesk', sans-serif;
+  }
+
+  .wrap{ max-width: 1040px; margin: 0 auto; }
+
+  header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 22px;
+  }
+  .brand{ font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
+  .brand span{ color: var(--accent); }
+
+  .header-actions{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+
+  .view-toggle{
+    display:flex; background: var(--paper); border: 1px solid var(--line);
+    border-radius: 999px; padding: 4px; gap: 4px;
+  }
+  .view-toggle button{
+    border:none; background:transparent; padding: 8px 16px; border-radius: 999px;
+    font-family: inherit; font-weight: 600; font-size: 13.5px; color: var(--ink-soft); cursor:pointer;
+  }
+  .view-toggle button.active{ background: var(--accent); color: white; }
+
+  .pill-btn{
+    font-family: inherit; font-weight:600; font-size:13.5px;
+    padding: 9px 16px; border-radius: 999px; border: 1px solid var(--line);
+    background: var(--paper); cursor:pointer; color: var(--ink);
+  }
+  .pill-btn:hover{ background: var(--accent-soft); border-color: var(--accent); }
+
+  .legend{ display:flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+  .legend-item{ display:flex; align-items:center; gap: 7px; font-size: 12.5px; color: var(--ink-soft); font-weight: 500; }
+  .dot{ width: 9px; height:9px; border-radius:50%; flex-shrink:0; }
+
+  .month-nav{ display:flex; align-items:center; justify-content:space-between; margin-bottom: 14px; }
+  .month-nav h2{ font-size: 20px; font-weight: 600; text-transform:capitalize; }
+  .nav-btns{ display:flex; gap:8px; align-items:center; }
+  .nav-btns button{
+    width:34px; height:34px; border-radius: 10px; border: 1px solid var(--line);
+    background: var(--paper); cursor:pointer; font-size: 16px; color: var(--ink);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .nav-btns button:hover{ background: var(--accent-soft); border-color: var(--accent); }
+  .today-btn{
+    font-family: inherit; font-weight: 600; font-size: 13px; padding: 8px 14px;
+    border-radius: 10px; border: 1px solid var(--line); background: var(--paper); cursor: pointer; color: var(--ink);
+  }
+  .today-btn:hover{ background: var(--accent-soft); border-color: var(--accent); }
+
+  /* Month grid */
+  .cal-weekdays{ display:grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 8px; }
+  .cal-weekdays div{ text-align:center; font-size: 12px; font-weight: 600; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.04em; }
+  .cal-grid{ display:grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+  .cal-cell{
+    background: var(--paper); border: 1px solid var(--line); border-radius: 12px;
+    min-height: 96px; padding: 8px; cursor: pointer; display:flex; flex-direction: column; gap: 5px;
+  }
+  .cal-cell:hover{ border-color: var(--accent); }
+  .cal-cell.empty{ background: transparent; border: none; cursor: default; }
+  .cal-cell.today{ border: 1.5px solid var(--accent); background: var(--accent-soft); }
+  .day-num{ font-size: 13px; font-weight: 600; color: var(--ink-soft); }
+  .cal-cell.today .day-num{ color: var(--accent); }
+  .chip{
+    font-size: 11px; font-weight: 600; padding: 3px 7px; border-radius: 6px;
+    white-space: nowrap; overflow:hidden; text-overflow: ellipsis;
+  }
+  .more-chip{ font-size: 11px; color: var(--ink-soft); font-weight: 500; padding: 0 2px;}
+
+  /* ---------- Week (hourly agenda) view ---------- */
+  .week-allday{
+    display:grid;
+    grid-template-columns: 52px repeat(7, 1fr);
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+  .week-allday .lbl{ font-size:10px; color: var(--ink-soft); align-self:center; }
+  .allday-col{ display:flex; flex-direction:column; gap:3px; min-height: 20px; }
+  .allday-col .chip{ cursor:pointer; }
+
+  .week-header{
+    display:grid;
+    grid-template-columns: 52px repeat(7, 1fr);
+    gap: 4px;
+    margin-bottom: 6px;
+  }
+  .week-header .wd-box{ text-align:center; padding: 4px 0; border-radius: 10px; }
+  .week-header .wd-box.today{ background: var(--accent-soft); }
+  .week-header .wd{ font-size:10.5px; text-transform:uppercase; color:var(--ink-soft); font-weight:600; letter-spacing:.03em; }
+  .week-header .dn{ font-size:16px; font-weight:700; }
+  .week-header .wd-box.today .dn{ color: var(--accent); }
+
+  .week-scroll{
+    max-height: 620px;
+    overflow-y: auto;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--paper);
+  }
+  .week-grid{
+    display:grid;
+    grid-template-columns: 52px repeat(7, 1fr);
+    position: relative;
+  }
+  .hour-col{ position:relative; }
+  .hour-row-label{
+    box-sizing:border-box;
+    font-size: 10.5px;
+    color: var(--ink-soft);
+    text-align:right;
+    padding-right: 8px;
+    transform: translateY(-6px);
+  }
+  .day-col{
+    position:relative;
+    border-left: 1px solid var(--line);
+  }
+  .hour-line{
+    box-sizing:border-box;
+    border-bottom: 1px solid var(--line);
+  }
+  .event-block{
+    position:absolute;
+    left: 3px; right: 3px;
+    border-radius: 8px;
+    padding: 4px 6px;
+    font-size: 11px;
+    line-height: 1.25;
+    overflow:hidden;
+    cursor:pointer;
+    z-index: 2;
+  }
+  .event-block .t{ font-weight:700; display:block; }
+  .event-block .h{ opacity:.8; font-size: 10px; }
+  .now-line{
+    position:absolute; left:0; right:0; height:2px; background:#E8515A; z-index:5; pointer-events:none;
+  }
+  .now-line::before{
+    content:''; position:absolute; left:-4px; top:-3px; width:8px; height:8px; border-radius:50%; background:#E8515A;
+  }
+
+  /* Modal */
+  .overlay{ position: fixed; inset:0; background: rgba(30,27,46,0.45); display:none; align-items:center; justify-content:center; padding: 20px; z-index: 50; }
+  .overlay.open{ display:flex; }
+  .modal{ background: var(--paper); border-radius: 18px; padding: 26px; width: 100%; max-width: 420px; max-height: 90vh; overflow-y:auto; }
+  .modal h2{ font-size:19px; margin-bottom: 18px; }
+  .field{ margin-bottom: 14px; }
+  .field label{ display:block; font-size:12px; font-weight:600; color:var(--ink-soft); margin-bottom:6px; text-transform:uppercase; letter-spacing:.03em;}
+  .field input, .field select, .field textarea{
+    width:100%; font-family: inherit; font-size: 14px; padding: 10px 12px; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+  }
+  .field textarea{ resize: vertical; min-height: 50px; }
+  .field-row{ display:flex; gap:10px; }
+  .field-row .field{ flex:1; }
+
+  .type-options{ display:flex; gap:8px; flex-wrap:wrap; }
+  .type-opt{
+    flex:1 1 auto; padding: 8px 10px; border-radius: 10px; border: 1.5px solid var(--line);
+    text-align:center; font-size: 12px; font-weight:600; cursor:pointer; color: var(--ink-soft); user-select:none;
+  }
+  .type-opt.selected{ border-color: var(--ink); background: var(--accent-soft); color: var(--ink); }
+
+  .modal-actions{ display:flex; justify-content:space-between; align-items:center; margin-top: 20px; gap:10px;}
+  .btn{ font-family: inherit; font-weight:600; font-size:14px; padding: 10px 18px; border-radius: 10px; border:none; cursor:pointer; }
+  .btn-primary{ background: var(--accent); color:white; }
+  .btn-primary:hover{ background:#5c4cd9; }
+  .btn-ghost{ background:transparent; color: var(--ink-soft); }
+  .btn-ghost:hover{ color: var(--ink); }
+
+  .day-events-list{ display:flex; flex-direction:column; gap:8px; margin-bottom:14px; }
+  .day-events-list .chip{ position:relative; padding: 6px 28px 6px 8px; display:block; white-space:normal; cursor:default; }
+  .del-x{
+    position:absolute; top:5px; right:6px; background:none; border:none; cursor:pointer;
+    color: inherit; opacity:.65; font-size:14px; line-height:1; font-family: inherit;
+  }
+  .del-x:hover{ opacity:1; }
+
+  /* Ramos manager */
+  .ramo-row{ display:flex; align-items:center; gap:10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .ramo-row .swatch{ width:16px; height:16px; border-radius:5px; flex-shrink:0; }
+  .ramo-row .name{ flex:1; font-size:14px; font-weight:500; }
+  .ramo-row button{ background:none; border:none; color: var(--ink-soft); cursor:pointer; font-size:14px; }
+  .ramo-row button:hover{ color: var(--c-evaluacion-default); }
+  .color-swatches{ display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
+  .swatch-opt{ width:26px; height:26px; border-radius:8px; cursor:pointer; border: 2px solid transparent; }
+  .swatch-opt.selected{ border-color: var(--ink); }
+  .ramo-select-row{ display:flex; gap:8px; align-items:flex-end; }
+  .ramo-select-row select{ flex:1; }
+
+  .status-msg{ text-align:center; font-size: 13px; color: var(--ink-soft); padding: 20px; }
+
+  @media (max-width: 720px){
+    .cal-grid, .cal-weekdays{ gap:5px; }
+    .cal-cell{ min-height: 56px; padding: 5px; }
+    .chip{ font-size:9px; padding:2px 4px; }
+    .day-num{ font-size:11px; }
+    .week-header .wd{ font-size:9px; }
+    .week-header .dn{ font-size:13px; }
+    .hour-row-label{ font-size:9px; }
+    .event-block{ font-size:9.5px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">Mi <span>Semestre</span></div>
+    <div class="header-actions">
+      <button class="pill-btn" id="ramos-btn">🎨 Ramos</button>
+      <div class="view-toggle">
+        <button id="btn-month" class="active">Mes</button>
+        <button id="btn-week">Semana</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="legend" id="legend"></div>
+
+  <div class="month-nav">
+    <h2 id="period-label">—</h2>
+    <div class="nav-btns">
+      <button id="prev-btn">‹</button>
+      <button class="today-btn" id="today-btn">Hoy</button>
+      <button id="next-btn">›</button>
+    </div>
+  </div>
+
+  <div id="month-view">
+    <div class="cal-weekdays">
+      <div>Lun</div><div>Mar</div><div>Mié</div><div>Jue</div><div>Vie</div><div>Sáb</div><div>Dom</div>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+  </div>
+
+  <div id="week-view" style="display:none;">
+    <div class="week-header" id="week-header"></div>
+    <div class="week-allday" id="week-allday"></div>
+    <div class="week-scroll">
+      <div class="week-grid" id="week-grid"></div>
+    </div>
+  </div>
+
+  <div class="status-msg" id="status-msg" style="display:none;"></div>
+</div>
+
+<!-- Modal: add/edit day -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h2 id="modal-title">Nuevo evento</h2>
+
+    <div id="existing-events" class="day-events-list"></div>
+
+    <div class="field">
+      <label>Tipo</label>
+      <div class="type-options" id="type-options">
+        <div class="type-opt" data-type="evaluacion">Evaluación</div>
+        <div class="type-opt" data-type="entrenamiento">Entrenamiento</div>
+        <div class="type-opt" data-type="partido">Partido</div>
+        <div class="type-opt" data-type="estudio">Estudio</div>
+      </div>
+    </div>
+
+    <div class="field" id="ramo-field">
+      <label>Ramo</label>
+      <div class="ramo-select-row">
+        <select id="f-ramo"><option value="">Sin ramo</option></select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Título</label>
+      <input type="text" id="f-title" placeholder="Ej: Certamen de Cálculo">
+    </div>
+    <div class="field">
+      <label>Fecha</label>
+      <input type="date" id="f-date">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Hora inicio (opcional)</label>
+        <input type="time" id="f-time">
+      </div>
+      <div class="field">
+        <label>Hora término (opcional)</label>
+        <input type="time" id="f-time-end">
+      </div>
+    </div>
+    <div class="field">
+      <label>Notas (opcional)</label>
+      <textarea id="f-notes" placeholder="Sala, tema, contra quién juegan, etc."></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="cancel-btn">Cancelar</button>
+      <button class="btn btn-primary" id="save-btn">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: ramos manager -->
+<div class="overlay" id="ramos-overlay">
+  <div class="modal">
+    <h2>Tus ramos</h2>
+    <div id="ramos-list"></div>
+
+    <div class="field" style="margin-top:16px;">
+      <label>Nuevo ramo</label>
+      <input type="text" id="new-ramo-name" placeholder="Ej: Cálculo II">
+      <div class="color-swatches" id="new-ramo-colors"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="ramos-close-btn">Cerrar</button>
+      <button class="btn btn-primary" id="ramos-add-btn">Agregar ramo</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore, collection, addDoc, deleteDoc, doc,
+  onSnapshot, query, orderBy
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyC65mkNPtELeb4bpiwi8JiBZn73IixIPo8",
+  authDomain: "mi-planner-110c9.firebaseapp.com",
+  projectId: "mi-planner-110c9",
+  storageBucket: "mi-planner-110c9.firebasestorage.app",
+  messagingSenderId: "148990798905",
+  appId: "1:148990798905:web:ecce892faffe7fe42631e8",
+  measurementId: "G-TWW4TYZJNS"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const eventsCol = collection(db, "events");
+const ramosCol = collection(db, "ramos");
+
+const TYPE_LABEL = { evaluacion: "Evaluación", entrenamiento: "Entrenamiento", partido: "Partido", estudio: "Estudio" };
+const FIXED_COLOR = { entrenamiento: "#22A669", partido: "#3A86FF" };
+const RAMO_PRESET_COLORS = ["#E8515A","#3A86FF","#22A669","#F4A100","#9B5DE5","#00B4D8","#F15BB5","#4361EE","#FB8500","#118AB2"];
+
+let allEvents = [];
+let ramos = [];
+let currentView = 'month';
+let refDate = new Date();
+let selectedType = 'evaluacion';
+let newRamoColor = RAMO_PRESET_COLORS[0];
+
+const HOUR_START = 7, HOUR_END = 23, HOUR_H = 56; // agenda 7am–11pm
+
+const statusMsg = document.getElementById('status-msg');
+statusMsg.style.display = 'block';
+statusMsg.textContent = 'Cargando tus eventos...';
+
+onSnapshot(query(eventsCol, orderBy('date')), (snap) => {
+  allEvents = [];
+  snap.forEach(d => allEvents.push({ id: d.id, ...d.data() }));
+  statusMsg.style.display = 'none';
+  render();
+}, (err) => {
+  statusMsg.style.display = 'block';
+  statusMsg.textContent = 'No se pudo conectar a la base de datos.';
+  console.error(err);
+});
+
+onSnapshot(query(ramosCol, orderBy('name')), (snap) => {
+  ramos = [];
+  snap.forEach(d => ramos.push({ id: d.id, ...d.data() }));
+  renderRamoSelect();
+  renderRamosList();
+  renderLegend();
+  render();
+});
+
+function pad(n){ return String(n).padStart(2,'0'); }
+function toISO(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function isSameDay(a,b){ return toISO(a)===toISO(b); }
+function escapeHtml(s){ const div = document.createElement('div'); div.textContent = s; return div.innerHTML; }
+function eventsForDate(iso){ return allEvents.filter(e => e.date === iso).sort((a,b)=> (a.time||'').localeCompare(b.time||'')); }
+
+function colorFor(ev){
+  if(ev.ramoId){
+    const r = ramos.find(x=>x.id===ev.ramoId);
+    if(r) return r.color;
+  }
+  if(FIXED_COLOR[ev.type]) return FIXED_COLOR[ev.type];
+  return ev.type === 'estudio' ? '#F4A100' : '#E8515A';
+}
+function styleChip(el, color){
+  el.style.background = color + '20';
+  el.style.color = color;
+}
+
+function defaultDuration(type){
+  return { evaluacion: 90, entrenamiento: 90, partido: 120, estudio: 60 }[type] || 60;
+}
+
+// ---------- Legend ----------
+function renderLegend(){
+  const legend = document.getElementById('legend');
+  legend.innerHTML = '';
+  ramos.forEach(r=>{
+    const it = document.createElement('div');
+    it.className = 'legend-item';
+    it.innerHTML = `<span class="dot" style="background:${r.color}"></span>${escapeHtml(r.name)}`;
+    legend.appendChild(it);
+  });
+  const fixed = [['Entrenamiento', FIXED_COLOR.entrenamiento], ['Partido', FIXED_COLOR.partido], ['Estudio (sin ramo)', '#F4A100']];
+  fixed.forEach(([label,color])=>{
+    const it = document.createElement('div');
+    it.className = 'legend-item';
+    it.innerHTML = `<span class="dot" style="background:${color}"></span>${label}`;
+    legend.appendChild(it);
+  });
+}
+
+// ---------- MONTH VIEW ----------
+function renderMonth(){
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+  const y = refDate.getFullYear(), m = refDate.getMonth();
+  document.getElementById('period-label').textContent = refDate.toLocaleDateString('es-CL', { month: 'long', year: 'numeric' });
+
+  const firstOfMonth = new Date(y, m, 1);
+  let startOffset = (firstOfMonth.getDay() + 6) % 7;
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const today = new Date();
+
+  for(let i=0;i<startOffset;i++){
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell empty';
+    grid.appendChild(cell);
+  }
+
+  for(let day=1; day<=daysInMonth; day++){
+    const dateObj = new Date(y, m, day);
+    const iso = toISO(dateObj);
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell' + (isSameDay(dateObj, today) ? ' today' : '');
+    cell.innerHTML = `<div class="day-num">${day}</div>`;
+
+    const dayEvents = eventsForDate(iso);
+    dayEvents.slice(0,3).forEach(ev => {
+      const chip = document.createElement('div');
+      chip.className = 'chip';
+      chip.textContent = ev.title;
+      styleChip(chip, colorFor(ev));
+      cell.appendChild(chip);
+    });
+    if(dayEvents.length > 3){
+      const more = document.createElement('div');
+      more.className = 'more-chip';
+      more.textContent = `+${dayEvents.length-3} más`;
+      cell.appendChild(more);
+    }
+    cell.addEventListener('click', () => openModal(iso));
+    grid.appendChild(cell);
+  }
+}
+
+// ---------- WEEK VIEW (hourly agenda) ----------
+function getWeekStart(d){
+  const dd = new Date(d);
+  const offset = (dd.getDay()+6)%7;
+  dd.setDate(dd.getDate()-offset);
+  dd.setHours(0,0,0,0);
+  return dd;
+}
+
+let nowLineInterval = null;
+
+function renderWeek(){
+  const weekStart = getWeekStart(refDate);
+  const today = new Date();
+  const weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate()+6);
+  const fmt = (d)=> d.toLocaleDateString('es-CL', {day:'numeric', month:'short'});
+  document.getElementById('period-label').textContent = `${fmt(weekStart)} – ${fmt(weekEnd)}`;
+
+  const wdNames = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+  const days = [];
+  for(let i=0;i<7;i++){ const d = new Date(weekStart); d.setDate(d.getDate()+i); days.push(d); }
+
+  // header
+  const header = document.getElementById('week-header');
+  header.innerHTML = '<div></div>';
+  days.forEach((d,i)=>{
+    const box = document.createElement('div');
+    box.className = 'wd-box' + (isSameDay(d,today)?' today':'');
+    box.innerHTML = `<div class="wd">${wdNames[i]}</div><div class="dn">${d.getDate()}</div>`;
+    header.appendChild(box);
+  });
+
+  // all-day row (events without time)
+  const allday = document.getElementById('week-allday');
+  allday.innerHTML = '<div class="lbl">Sin hora</div>';
+  days.forEach(d=>{
+    const iso = toISO(d);
+    const col = document.createElement('div');
+    col.className = 'allday-col';
+    eventsForDate(iso).filter(e=>!e.time).forEach(ev=>{
+      const chip = document.createElement('div');
+      chip.className = 'chip';
+      chip.textContent = ev.title;
+      styleChip(chip, colorFor(ev));
+      chip.addEventListener('click', ()=> openModal(iso));
+      col.appendChild(chip);
+    });
+    allday.appendChild(col);
+  });
+
+  // hourly grid
+  const gridEl = document.getElementById('week-grid');
+  gridEl.innerHTML = '';
+  const totalHours = HOUR_END - HOUR_START;
+  const totalHeight = totalHours * HOUR_H;
+
+  const hourCol = document.createElement('div');
+  hourCol.className = 'hour-col';
+  hourCol.style.height = totalHeight + 'px';
+  for(let h=HOUR_START; h<HOUR_END; h++){
+    const lbl = document.createElement('div');
+    lbl.className = 'hour-row-label';
+    lbl.style.height = HOUR_H + 'px';
+    lbl.textContent = (h<10?'0'+h:h) + ':00';
+    hourCol.appendChild(lbl);
+  }
+  gridEl.appendChild(hourCol);
+
+  days.forEach(d=>{
+    const iso = toISO(d);
+    const col = document.createElement('div');
+    col.className = 'day-col';
+    col.style.height = totalHeight + 'px';
+    col.dataset.date = iso;
+
+    for(let h=HOUR_START; h<HOUR_END; h++){
+      const line = document.createElement('div');
+      line.className = 'hour-line';
+      line.style.height = HOUR_H + 'px';
+      col.appendChild(line);
+    }
+
+    eventsForDate(iso).filter(e=>e.time).forEach(ev=>{
+      const [sh,sm] = ev.time.split(':').map(Number);
+      const startMin = sh*60+sm;
+      let endMin;
+      if(ev.timeEnd){
+        const [eh,em] = ev.timeEnd.split(':').map(Number);
+        endMin = eh*60+em;
+      } else {
+        endMin = startMin + defaultDuration(ev.type);
+      }
+      const clampedStart = Math.max(startMin, HOUR_START*60);
+      const clampedEnd = Math.min(endMin, HOUR_END*60);
+      if(clampedEnd <= clampedStart) return;
+
+      const top = (clampedStart - HOUR_START*60) / 60 * HOUR_H;
+      const height = Math.max((clampedEnd - clampedStart) / 60 * HOUR_H, 20);
+
+      const block = document.createElement('div');
+      block.className = 'event-block';
+      block.style.top = top + 'px';
+      block.style.height = height + 'px';
+      const color = colorFor(ev);
+      block.style.background = color + '26';
+      block.style.borderLeft = `3px solid ${color}`;
+      block.style.color = color;
+      block.innerHTML = `<span class="t">${escapeHtml(ev.title)}</span><span class="h">${ev.time}${ev.timeEnd?'–'+ev.timeEnd:''}</span>`;
+      block.addEventListener('click', ()=> openModal(iso));
+      col.appendChild(block);
+    });
+
+    if(isSameDay(d, today)){
+      const nowLine = document.createElement('div');
+      nowLine.className = 'now-line';
+      nowLine.id = 'now-line';
+      col.appendChild(nowLine);
+      positionNowLine(nowLine);
+    }
+
+    gridEl.appendChild(col);
+  });
+
+  clearInterval(nowLineInterval);
+  nowLineInterval = setInterval(()=>{
+    const nl = document.getElementById('now-line');
+    if(nl) positionNowLine(nl);
+  }, 60000);
+}
+
+function positionNowLine(el){
+  const now = new Date();
+  const min = now.getHours()*60 + now.getMinutes();
+  const top = (min - HOUR_START*60) / 60 * HOUR_H;
+  el.style.top = Math.max(0, Math.min(top, (HOUR_END-HOUR_START)*HOUR_H)) + 'px';
+  el.style.display = (min >= HOUR_START*60 && min <= HOUR_END*60) ? 'block' : 'none';
+}
+
+function render(){
+  if(currentView === 'month'){
+    document.getElementById('month-view').style.display = '';
+    document.getElementById('week-view').style.display = 'none';
+    renderMonth();
+  } else {
+    document.getElementById('month-view').style.display = 'none';
+    document.getElementById('week-view').style.display = '';
+    renderWeek();
+  }
+}
+
+document.getElementById('btn-month').addEventListener('click', ()=>{
+  currentView = 'month';
+  document.getElementById('btn-month').classList.add('active');
+  document.getElementById('btn-week').classList.remove('active');
+  render();
+});
+document.getElementById('btn-week').addEventListener('click', ()=>{
+  currentView = 'week';
+  document.getElementById('btn-week').classList.add('active');
+  document.getElementById('btn-month').classList.remove('active');
+  render();
+});
+
+document.getElementById('prev-btn').addEventListener('click', ()=>{
+  if(currentView==='month') refDate.setMonth(refDate.getMonth()-1);
+  else refDate.setDate(refDate.getDate()-7);
+  refDate = new Date(refDate);
+  render();
+});
+document.getElementById('next-btn').addEventListener('click', ()=>{
+  if(currentView==='month') refDate.setMonth(refDate.getMonth()+1);
+  else refDate.setDate(refDate.getDate()+7);
+  refDate = new Date(refDate);
+  render();
+});
+document.getElementById('today-btn').addEventListener('click', ()=>{ refDate = new Date(); render(); });
+
+// ---------- Event modal ----------
+const overlay = document.getElementById('overlay');
+const typeOptionsEl = document.getElementById('type-options');
+const ramoField = document.getElementById('ramo-field');
+const ramoSelect = document.getElementById('f-ramo');
+
+function setSelectedType(t){
+  selectedType = t;
+  [...typeOptionsEl.children].forEach(el=> el.classList.toggle('selected', el.dataset.type===t));
+  ramoField.style.display = (t==='evaluacion' || t==='estudio') ? '' : 'none';
+}
+[...typeOptionsEl.children].forEach(el=> el.addEventListener('click', ()=> setSelectedType(el.dataset.type)));
+
+function renderRamoSelect(){
+  ramoSelect.innerHTML = '<option value="">Sin ramo</option>' +
+    ramos.map(r=> `<option value="${r.id}">${escapeHtml(r.name)}</option>`).join('');
+}
+
+function openModal(iso){
+  const [y,m,d] = iso.split('-');
+  document.getElementById('modal-title').textContent = `${d}/${m}/${y}`;
+  document.getElementById('f-date').value = iso;
+  document.getElementById('f-title').value = '';
+  document.getElementById('f-time').value = '';
+  document.getElementById('f-time-end').value = '';
+  document.getElementById('f-notes').value = '';
+  ramoSelect.value = '';
+  setSelectedType('evaluacion');
+
+  const list = document.getElementById('existing-events');
+  list.innerHTML = '';
+  const evs = eventsForDate(iso);
+  evs.forEach(ev=>{
+    const item = document.createElement('div');
+    item.className = 'chip';
+    styleChip(item, colorFor(ev));
+    item.innerHTML = `<b>${escapeHtml(ev.title)}</b>${ev.time?` · ${ev.time}${ev.timeEnd?'–'+ev.timeEnd:''}`:''}${ev.notes?`<br><span style="opacity:.8">${escapeHtml(ev.notes)}</span>`:''}<button class="del-x" data-id="${ev.id}">✕</button>`;
+    list.appendChild(item);
+  });
+  list.querySelectorAll('.del-x').forEach(btn=>{
+    btn.addEventListener('click', async (e)=>{
+      e.stopPropagation();
+      await deleteDoc(doc(db, 'events', btn.dataset.id));
+      openModal(iso);
+    });
+  });
+
+  overlay.classList.add('open');
+}
+
+document.getElementById('cancel-btn').addEventListener('click', ()=> overlay.classList.remove('open'));
+overlay.addEventListener('click', (e)=>{ if(e.target === overlay) overlay.classList.remove('open'); });
+
+document.getElementById('save-btn').addEventListener('click', async ()=>{
+  const title = document.getElementById('f-title').value.trim();
+  const date = document.getElementById('f-date').value;
+  const time = document.getElementById('f-time').value;
+  const timeEnd = document.getElementById('f-time-end').value;
+  const notes = document.getElementById('f-notes').value.trim();
+  const ramoId = ramoField.style.display !== 'none' ? ramoSelect.value : '';
+
+  if(!title || !date){ alert('Falta el título o la fecha.'); return; }
+
+  await addDoc(eventsCol, { title, date, time, timeEnd, notes, type: selectedType, ramoId: ramoId || null });
+  overlay.classList.remove('open');
+});
+
+// ---------- Ramos manager ----------
+const ramosOverlay = document.getElementById('ramos-overlay');
+document.getElementById('ramos-btn').addEventListener('click', ()=> ramosOverlay.classList.add('open'));
+document.getElementById('ramos-close-btn').addEventListener('click', ()=> ramosOverlay.classList.remove('open'));
+ramosOverlay.addEventListener('click', (e)=>{ if(e.target === ramosOverlay) ramosOverlay.classList.remove('open'); });
+
+const newRamoColorsEl = document.getElementById('new-ramo-colors');
+RAMO_PRESET_COLORS.forEach((c,i)=>{
+  const sw = document.createElement('div');
+  sw.className = 'swatch-opt' + (i===0?' selected':'');
+  sw.style.background = c;
+  sw.addEventListener('click', ()=>{
+    newRamoColor = c;
+    [...newRamoColorsEl.children].forEach(el=>el.classList.remove('selected'));
+    sw.classList.add('selected');
+  });
+  newRamoColorsEl.appendChild(sw);
+});
+
+function renderRamosList(){
+  const list = document.getElementById('ramos-list');
+  list.innerHTML = '';
+  if(ramos.length===0){
+    list.innerHTML = '<p style="font-size:13px; color:var(--ink-soft);">Aún no tienes ramos. Agrega el primero abajo 👇</p>';
+    return;
+  }
+  ramos.forEach(r=>{
+    const row = document.createElement('div');
+    row.className = 'ramo-row';
+    row.innerHTML = `<div class="swatch" style="background:${r.color}"></div><div class="name">${escapeHtml(r.name)}</div><button data-id="${r.id}">✕</button>`;
+    row.querySelector('button').addEventListener('click', async ()=>{
+      await deleteDoc(doc(db, 'ramos', r.id));
+    });
+    list.appendChild(row);
+  });
+}
+
+document.getElementById('ramos-add-btn').addEventListener('click', async ()=>{
+  const name = document.getElementById('new-ramo-name').value.trim();
+  if(!name){ alert('Ponle un nombre al ramo.'); return; }
+  await addDoc(ramosCol, { name, color: newRamoColor });
+  document.getElementById('new-ramo-name').value = '';
+});
+
+render();
+</script>
+</body>
+</html>
